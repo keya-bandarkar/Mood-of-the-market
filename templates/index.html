@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood of the Market 🚀</title>
+    <!-- Plotly.js via CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+    <style>
+        /* Import a sleek Google Font */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+        :root {
+            --bg-dark: #0f111a;
+            --bg-card: rgba(30, 33, 48, 0.7);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.5);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --positive: #10b981;
+            --negative: #ef4444;
+            --neutral: #8b5cf6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            /* subtle radial gradient background */
+            background-image: radial-gradient(circle at 50% 0%, rgba(99,102,241,0.15), transparent 60%);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin-top: 3rem;
+            margin-bottom: 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        header {
+            text-align: center;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* Search Section */
+        .search-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        input {
+            width: 100%;
+            max-width: 400px;
+            padding: 1rem 1.5rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1.2rem;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        button {
+            padding: 1rem 2rem;
+            border-radius: 9999px;
+            border: none;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            animation: fadeIn 0.8s ease;
+        }
+
+        /* Results Layout */
+        #results-area {
+            display: none; /* hidden initially */
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        /* Left Side: Score & Chart */
+        .chart-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .mood-display {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .emoji-big {
+            font-size: 5rem;
+            margin: 1rem 0;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .mood-score-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .mood-score-text span {
+            color: white;
+            font-size: 2rem;
+        }
+
+        /* Plotly Container */
+        #plotly-chart {
+            width: 100%;
+            height: 300px;
+        }
+
+        /* Right Side: Posts */
+        .posts-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .post-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--text-muted);
+            transition: transform 0.2s, background 0.2s;
+            text-decoration: none;
+            display: block;
+            color: inherit;
+        }
+
+        .post-card:hover {
+            transform: translateX(5px);
+            background: rgba(255,255,255,0.08);
+        }
+
+        .post-card.positive { border-left-color: var(--positive); }
+        .post-card.negative { border-left-color: var(--negative); }
+        .post-card.neutral { border-left-color: var(--neutral); }
+
+        .post-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+
+        .sub-tag {
+            background: rgba(255,255,255,0.1);
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            color: var(--text-muted);
+        }
+
+        .sentiment-tag {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .sentiment-tag.positive { color: var(--positive); }
+        .sentiment-tag.negative { color: var(--negative); }
+        .sentiment-tag.neutral { color: var(--neutral); }
+
+
+        /* Loaders */
+        .loader {
+            display: none;
+            width: 48px;
+            height: 48px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-bottom-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+            margin: 3rem auto;
+        }
+
+        #loader-container {
+            display: none;
+            justify-content: center;
+        }
+
+        #error-msg {
+            display: none;
+            color: var(--negative);
+            text-align: center;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 1rem;
+            border-radius: 12px;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            #results-area {
+                grid-template-columns: 1fr;
+            }
+            h1 { font-size: 2.5rem; }
+            .search-container { flex-direction: column; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Mood of the Market</h1>
+            <p class="subtitle">Real-time Reddit sentiment analysis for Stocks & Crypto</p>
+            
+            <form id="search-form" class="search-container">
+                <input type="text" id="ticker-input" placeholder="Enter ticker (e.g. TSLA, BTC)" required autocomplete="off">
+                <button type="submit">Analyze Mood</button>
+            </form>
+            <div id="error-msg"></div>
+        </header>
+
+        <div id="loader-container">
+            <span class="loader"></span>
+        </div>
+
+        <div id="results-area">
+            <!-- Left: Chart & Score -->
+            <div class="glass-card chart-section">
+                <div class="mood-display">
+                    <p class="mood-score-text">Overall Mood: <span id="ticker-display"></span></p>
+                    <div class="emoji-big" id="emoji-display">😐</div>
+                    <p class="mood-score-text">Score: <span id="score-display">0.00</span></p>
+                </div>
+                <div id="plotly-chart"></div>
+            </div>
+
+            <!-- Right: Top Posts -->
+            <div class="glass-card posts-section">
+                <h2>Top Conversations</h2>
+                <div id="posts-container">
+                    <!-- Posts populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('search-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const ticker = document.getElementById('ticker-input').value.trim();
+            if (!ticker) return;
+
+            // UI Reset & Loading State
+            document.getElementById('error-msg').style.display = 'none';
+            document.getElementById('results-area').style.display = 'none';
+            document.getElementById('loader-container').style.display = 'flex';
+
+            try {
+                const formData = new FormData();
+                formData.append('ticker', ticker);
+
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Failed to fetch data");
+                }
+
+                // Populate UI
+                document.getElementById('ticker-display').innerText = data.ticker;
+                document.getElementById('emoji-display').innerText = data.emoji;
+                
+                // Colorize score text based on value
+                const scoreDisplay = document.getElementById('score-display');
+                const score = data.mood_score;
+                scoreDisplay.innerText = score > 0 ? `+${score}` : score;
+                if(score > 0.2) scoreDisplay.style.color = 'var(--positive)';
+                else if(score < -0.2) scoreDisplay.style.color = 'var(--negative)';
+                else scoreDisplay.style.color = 'var(--neutral)';
+                
+                renderChart(data.summary);
+                renderPosts(data.top_posts);
+
+                document.getElementById('loader-container').style.display = 'none';
+                document.getElementById('results-area').style.display = 'grid';
+
+            } catch (error) {
+                document.getElementById('loader-container').style.display = 'none';
+                const errorEl = document.getElementById('error-msg');
+                errorEl.innerText = error.message;
+                errorEl.style.display = 'block';
+            }
+        });
+
+        function renderChart(summary) {
+            const data = [{
+                values: [summary.positive, summary.neutral, summary.negative],
+                labels: ['Bullish', 'Neutral', 'Bearish'],
+                type: 'pie',
+                hole: .5,
+                marker: {
+                    colors: ['#10b981', '#8b5cf6', '#ef4444'] // Match CSS vars
+                },
+                textinfo: 'label+percent',
+                textposition: 'inside',
+                hoverinfo: 'label+value'
+            }];
+
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#f8fafc', family: 'Outfit, sans-serif' },
+                margin: { t: 10, b: 10, l: 10, r: 10 },
+                showlegend: false,
+                annotations: [
+                    {
+                        font: { size: 16, color: '#94a3b8' },
+                        showarrow: false,
+                        text: 'Sentiment'
+                    }
+                ]
+            };
+
+            const config = { responsive: true, displayModeBar: false };
+
+            Plotly.newPlot('plotly-chart', data, layout, config);
+        }
+
+        function renderPosts(posts) {
+            const container = document.getElementById('posts-container');
+            container.innerHTML = '';
+
+            if (posts.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted)">No conversational context available.</p>';
+                return;
+            }
+
+            posts.forEach(post => {
+                const labelColorClass = post.sentiment_label; 
+                let labelIcon = '➖';
+                if(labelColorClass === 'positive') labelIcon = '📈';
+                if(labelColorClass === 'negative') labelIcon = '📉';
+
+                const html = `
+                    <a href="${post.url}" target="_blank" class="post-card ${labelColorClass}">
+                        <div class="post-title">${post.title || "(No Title)"}</div>
+                        <div class="post-meta">
+                            <span class="sub-tag">r/${post.subreddit}</span>
+                            <span class="sentiment-tag ${labelColorClass}">
+                                ${labelIcon} ${capitalize(post.sentiment_label)} (${Math.round(post.sentiment_confidence * 100)}%)
+                            </span>
+                        </div>
+                    </a>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function capitalize(s) {
+            return s && s[0].toUpperCase() + s.slice(1);
+        }
+    </script>
+</body>
+</html>
